@@ -1,0 +1,300 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 197 100% 50%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 197 100% 50%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-black text-foreground font-sans;
+    background: linear-gradient(135deg, #000000 0%, #0a0a0a 25%, #000000 50%, #0a0a0a 75%, #000000 100%);
+    background-attachment: fixed;
+    overflow-x: hidden;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-700 rounded-full;
+    background: linear-gradient(45deg, #00d4ff, #8b5cf6);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-dark-600;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-neon-blue/30 text-white;
+  }
+
+  /* Focus styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-neon-blue/50 ring-offset-2 ring-offset-black;
+  }
+}
+
+@layer components {
+  /* Glassmorphism effect */
+  .glass {
+    @apply backdrop-blur-xl bg-white/5 border border-white/10;
+  }
+
+  .glass-dark {
+    @apply backdrop-blur-xl bg-black/20 border border-white/5;
+  }
+
+  /* Neon glow effects */
+  .neon-glow-blue {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3), 0 0 40px rgba(0, 212, 255, 0.1);
+  }
+
+  .neon-glow-purple {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 0 40px rgba(139, 92, 246, 0.1);
+  }
+
+  .neon-glow-pink {
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.3), 0 0 40px rgba(236, 72, 153, 0.1);
+  }
+
+  .neon-glow-green {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3), 0 0 40px rgba(16, 185, 129, 0.1);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink bg-clip-text text-transparent;
+  }
+
+  .gradient-text-green {
+    @apply bg-gradient-to-r from-neon-green via-neon-cyan to-neon-blue bg-clip-text text-transparent;
+  }
+
+  /* Button styles */
+  .btn-primary {
+    @apply bg-gradient-to-r from-neon-blue to-neon-purple text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg neon-glow-blue;
+  }
+
+  .btn-secondary {
+    @apply glass text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 hover:bg-white/10;
+  }
+
+  .btn-danger {
+    @apply bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg;
+  }
+
+  /* Card styles */
+  .card-dark {
+    @apply glass-dark rounded-2xl p-6 transition-all duration-300 hover:bg-white/10;
+  }
+
+  .card-glow {
+    @apply card-dark neon-glow-blue;
+  }
+
+  /* Input styles */
+  .input-dark {
+    @apply glass-dark rounded-xl px-4 py-3 text-white placeholder-gray-400 border-0 focus:ring-2 focus:ring-neon-blue/50 transition-all duration-300;
+  }
+
+  /* Floating animation */
+  .floating {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  /* Pulse animation */
+  .pulse-slow {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Shimmer effect */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  /* Video container */
+  .video-container {
+    @apply relative rounded-2xl overflow-hidden glass-dark;
+    aspect-ratio: 16/9;
+  }
+
+  .video-container video {
+    @apply w-full h-full object-cover;
+  }
+
+  /* Participant grid */
+  .participant-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+
+  .participant-grid.single {
+    grid-template-columns: 1fr;
+  }
+
+  .participant-grid.two {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .participant-grid.three {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .participant-grid.four {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .participant-grid.many {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+
+  /* Chat styles */
+  .chat-message {
+    @apply glass-dark rounded-lg p-3 mb-2 transition-all duration-300 hover:bg-white/10;
+  }
+
+  .chat-message.own {
+    @apply bg-gradient-to-r from-neon-blue/20 to-neon-purple/20 ml-8;
+  }
+
+  .chat-message.other {
+    @apply mr-8;
+  }
+
+  /* Toolbar styles */
+  .toolbar {
+    @apply glass-dark rounded-2xl px-6 py-4 flex items-center justify-center gap-3;
+    min-width: fit-content;
+    max-width: 90vw;
+  }
+
+  .toolbar-button {
+    @apply glass rounded-xl p-3 text-white transition-all duration-300 hover:scale-110 hover:bg-white/20;
+    min-width: 48px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .toolbar-button.active {
+    @apply bg-gradient-to-r from-neon-blue to-neon-purple neon-glow-blue;
+  }
+
+  .toolbar-button.danger {
+    @apply bg-gradient-to-r from-red-500 to-red-600;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply w-8 h-8 border-4 border-gray-300 border-t-neon-blue rounded-full animate-spin;
+  }
+
+  /* Notification styles */
+  .notification {
+    @apply glass-dark rounded-xl p-4 border-l-4 border-neon-blue;
+  }
+
+  .notification.success {
+    @apply border-neon-green;
+  }
+
+  .notification.error {
+    @apply border-red-500;
+  }
+
+  .notification.warning {
+    @apply border-neon-yellow;
+  }
+}
+
+/* Custom animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.6), 0 0 60px rgba(0, 212, 255, 0.3);
+  }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .participant-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .toolbar {
+    @apply flex-wrap;
+  }
+  
+  .chat-message.own,
+  .chat-message.other {
+    @apply mx-0;
+  }
+} 
