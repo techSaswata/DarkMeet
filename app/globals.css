@@ -245,6 +245,10 @@
     @apply w-8 h-8 border-4 border-gray-300 border-t-neon-blue rounded-full animate-spin;
   }
 
+  .spinner-sm {
+    @apply w-5 h-5 border-2 border-gray-300 border-t-white rounded-full animate-spin;
+  }
+
   /* Notification styles */
   .notification {
     @apply glass-dark rounded-xl p-4 border-l-4 border-neon-blue;

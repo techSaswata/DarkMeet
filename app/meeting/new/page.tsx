@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { v4 as uuidv4 } from 'uuid'
 import toast from 'react-hot-toast'
+import { createSupabaseClient } from '@/lib/supabase'
 
 export default function NewMeetingPage() {
   const router = useRouter()
@@ -19,13 +20,48 @@ export default function NewMeetingPage() {
   const createInstantMeeting = async () => {
     setIsCreating(true)
     const roomId = uuidv4()
+    const creatorId = `creator-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     
-    // Simulate meeting creation
-    setTimeout(() => {
-      setCreatedRoomId(roomId)
-      setIsCreating(false)
-      toast.success('Meeting room created successfully!')
-    }, 1500)
+    try {
+      // Store meeting creation info in Supabase
+      const supabase = createSupabaseClient()
+      if (supabase) {
+        const { error } = await supabase
+          .from('meetings')
+          .insert({
+            room_id: roomId,
+            title: meetingTitle || 'Instant Meeting',
+            created_by: creatorId,
+            created_at: new Date().toISOString(),
+            is_active: true
+          })
+
+        if (error) {
+          console.log('Error storing meeting info:', error.message)
+          // Continue anyway - meeting will work without host privileges
+        } else {
+          console.log('Meeting created successfully with creator:', creatorId)
+          // Store creator ID in localStorage so they can claim host status
+          localStorage.setItem(`meeting-creator-${roomId}`, creatorId)
+        }
+      }
+
+      // Simulate meeting creation delay
+      setTimeout(() => {
+        setCreatedRoomId(roomId)
+        setIsCreating(false)
+        toast.success('Meeting room created successfully!')
+      }, 1500)
+
+    } catch (error) {
+      console.error('Error creating meeting:', error)
+      // Still create meeting even if database fails
+      setTimeout(() => {
+        setCreatedRoomId(roomId)
+        setIsCreating(false)
+        toast.success('Meeting room created successfully!')
+      }, 1500)
+    }
   }
 
   const joinMeeting = (roomId: string) => {

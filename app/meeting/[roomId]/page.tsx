@@ -11,6 +11,7 @@ import { AIAssistant } from '@/components/meeting/ai-assistant'
 import { Whiteboard } from '@/components/meeting/whiteboard'
 import { ScreenShare } from '@/components/meeting/screen-share'
 import { createSupabaseClient } from '@/lib/supabase'
+import { Video, User, ArrowRight, Mic, MicOff, VideoOff } from 'lucide-react'
 
 interface Participant {
   id: string
@@ -25,6 +26,12 @@ export default function MeetingRoomPage() {
   const params = useParams()
   const roomId = params.roomId as string
   
+  // Pre-meeting states
+  const [hasJoined, setHasJoined] = useState(false)
+  const [userName, setUserName] = useState('')
+  const [isJoining, setIsJoining] = useState(false)
+  
+  // Meeting states
   const [isConnected, setIsConnected] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false)
@@ -37,7 +44,30 @@ export default function MeetingRoomPage() {
   const [participants, setParticipants] = useState<Participant[]>([])
   const [currentUserId] = useState(() => `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
 
+  const handleJoinMeeting = async () => {
+    if (!userName.trim()) {
+      alert('Please enter your name')
+      return
+    }
+
+    setIsJoining(true)
+
+    try {
+      // Simulate a brief delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setHasJoined(true)
+    } catch (error) {
+      console.error('Error joining meeting:', error)
+      setIsJoining(false)
+    }
+  }
+
   useEffect(() => {
+    // Only initialize meeting after user has joined
+    if (!hasJoined || !userName.trim()) {
+      return
+    }
+
     const fetchParticipants = async (supabase: any) => {
       const { data, error } = await supabase
         .from('meeting_participants')
@@ -61,27 +91,72 @@ export default function MeetingRoomPage() {
 
     const initializeMeeting = async () => {
       console.log('Initializing meeting for room:', roomId)
+      console.log('Current user:', userName)
       
       try {
         const supabase = createSupabaseClient()
         if (!supabase) {
-          console.log('Supabase not available, using mock data')
-          setParticipants([
-            { 
-              id: currentUserId, 
-              name: 'You', 
-              isHost: true, 
-              isMuted: false, 
-              isVideoEnabled: true 
-            }
-          ])
+          console.log('Supabase not available, using mock data only')
+          // When offline, check if this user might be the creator based on URL patterns or other logic
+          // For now, default to non-host when offline since we can't verify
+          const currentUser = {
+            id: currentUserId,
+            name: 'You',
+            isHost: false, // Default to non-host when offline
+            isMuted: false,
+            isVideoEnabled: true
+          }
+          setParticipants([currentUser])
           setIsConnected(true)
           return
         }
 
-        // Generate a display name (in real app, this would come from auth)
-        const displayName = `User ${Math.floor(Math.random() * 1000)}`
-        console.log('Generated display name:', displayName)
+        console.log('Adding user to database:', userName)
+        
+        // Check if this meeting was created by the current user
+        // We'll need to check if there's a meeting record with this room_id and creator
+        const { data: meetingData, error: meetingError } = await supabase
+          .from('meetings')
+          .select('*')
+          .eq('room_id', roomId)
+          .single()
+
+        let isHost = false
+        
+        if (meetingError) {
+          console.log('No meeting record found, checking participants for host determination')
+          // Fallback: if no meeting record exists, check if there are any existing participants
+          // This handles cases where meetings are created directly via URL
+          const { data: existingParticipants, error: fetchError } = await supabase
+            .from('meeting_participants')
+            .select('*')
+            .eq('room_id', roomId)
+
+          if (fetchError) {
+            console.log('Error checking existing participants:', fetchError.message)
+          }
+
+          // If no participants exist, this could be the creator joining their own meeting
+          isHost = !existingParticipants || existingParticipants.length === 0
+        } else {
+          // Check if current user is the meeting creator
+          const creatorId = localStorage.getItem(`meeting-creator-${roomId}`)
+          isHost = meetingData.created_by === creatorId
+          console.log('Meeting found. Creator:', meetingData.created_by, 'Stored creator ID:', creatorId, 'Is host:', isHost)
+        }
+
+        console.log('Host status determined:', isHost)
+
+        // Immediately add current user to UI for instant feedback
+        const currentUser = {
+          id: currentUserId,
+          name: 'You',
+          isHost: isHost,
+          isMuted: false,
+          isVideoEnabled: true
+        }
+        setParticipants([currentUser])
+        setIsConnected(true) // Connect immediately for better UX
         
         // Add current user to participants
         const { error: insertError } = await supabase
@@ -89,51 +164,94 @@ export default function MeetingRoomPage() {
           .insert({
             room_id: roomId,
             user_id: currentUserId,
-            display_name: displayName,
-            is_host: true, // First user is host (simplified logic)
-            is_muted: false,
+            display_name: userName,
+            is_host: isHost, // Based on meeting creator, not join order
+            is_muted: false, // Start with default values
             is_video_enabled: true,
             joined_at: new Date().toISOString()
           })
 
         if (insertError) {
-          console.log('Insert error (table might not exist):', insertError.message)
-          // Fallback to mock data but still connect
-          setParticipants([
-            { 
-              id: currentUserId, 
-              name: displayName, 
-              isHost: true, 
-              isMuted: false, 
-              isVideoEnabled: true 
-            }
-          ])
-          setIsConnected(true)
+          console.log('Insert error:', insertError.message)
+          // UI already shows current user, so no need to update
         } else {
-          console.log('Successfully inserted participant into database')
+          console.log('Successfully added to database as', isHost ? 'host (meeting creator)' : 'participant')
           
-          // Subscribe to real-time changes
+          // Subscribe to real-time changes with optimized settings
           const subscription = supabase
-            .channel('meeting-participants')
+            .channel(`meeting-${roomId}`, {
+              config: {
+                broadcast: { self: false }, // Don't receive own events
+                presence: { key: currentUserId }
+              }
+            })
             .on('postgres_changes', 
               { 
-                event: '*', 
+                event: 'INSERT', 
                 schema: 'public', 
                 table: 'meeting_participants',
                 filter: `room_id=eq.${roomId}`
               }, 
               (payload) => {
-                console.log('Participant change:', payload)
-                fetchParticipants(supabase)
+                console.log('New participant joined:', payload.new)
+                // Immediately add to UI without waiting for fetch
+                const newParticipant = {
+                  id: payload.new.user_id,
+                  name: payload.new.user_id === currentUserId ? 'You' : payload.new.display_name,
+                  isHost: payload.new.is_host,
+                  isMuted: payload.new.is_muted,
+                  isVideoEnabled: payload.new.is_video_enabled
+                }
+                setParticipants(prev => {
+                  // Check if participant already exists
+                  const exists = prev.find(p => p.id === newParticipant.id)
+                  if (exists) return prev
+                  return [...prev, newParticipant]
+                })
               }
             )
-            .subscribe()
+            .on('postgres_changes', 
+              { 
+                event: 'DELETE', 
+                schema: 'public', 
+                table: 'meeting_participants',
+                filter: `room_id=eq.${roomId}`
+              }, 
+              (payload) => {
+                console.log('Participant left:', payload.old)
+                // Immediately remove from UI
+                setParticipants(prev => prev.filter(p => p.id !== payload.old.user_id))
+              }
+            )
+            .on('postgres_changes', 
+              { 
+                event: 'UPDATE', 
+                schema: 'public', 
+                table: 'meeting_participants',
+                filter: `room_id=eq.${roomId}`
+              }, 
+              (payload) => {
+                console.log('Participant updated:', payload.new)
+                // Update participant status immediately
+                setParticipants(prev => prev.map(p => 
+                  p.id === payload.new.user_id 
+                    ? {
+                        ...p,
+                        isMuted: payload.new.is_muted,
+                        isVideoEnabled: payload.new.is_video_enabled
+                      }
+                    : p
+                ))
+              }
+            )
+            .subscribe((status) => {
+              console.log('Subscription status:', status)
+            })
 
-          // Initial fetch
+          // Fetch existing participants
           await fetchParticipants(supabase)
-          setIsConnected(true)
 
-          // Cleanup function - return it properly
+          // Cleanup function
           return () => {
             console.log('Cleaning up participant subscription')
             supabase
@@ -149,21 +267,10 @@ export default function MeetingRoomPage() {
 
       } catch (error) {
         console.error('Error initializing meeting:', error)
-        // Always connect even if there are database issues
-        setParticipants([
-          { 
-            id: currentUserId, 
-            name: 'You', 
-            isHost: true, 
-            isMuted: false, 
-            isVideoEnabled: true 
-          }
-        ])
-        setIsConnected(true)
+        // UI already shows current user, so we're good
       }
     }
 
-    // Add a timeout to ensure meeting starts even if database is slow
     const timeoutId = setTimeout(() => {
       console.log('Meeting initialization timeout - connecting anyway')
       if (!isConnected) {
@@ -178,14 +285,10 @@ export default function MeetingRoomPage() {
         ])
         setIsConnected(true)
       }
-    }, 5000) // 5 second timeout
+    }, 3000) // Reduced to 3 seconds
 
     initializeMeeting().then((cleanup) => {
       clearTimeout(timeoutId)
-      // Store cleanup function for later use
-      if (cleanup) {
-        // We'll handle cleanup in the useEffect return
-      }
     })
 
     // Cleanup on unmount
@@ -201,10 +304,159 @@ export default function MeetingRoomPage() {
           .then(() => console.log('Cleanup: User removed from meeting'))
       }
     }
-  }, [roomId, currentUserId, isConnected])
+  }, [roomId, currentUserId, userName, hasJoined]) // Removed isMuted and isVideoEnabled
+
+  // Separate effect to update current user's mic/video status
+  useEffect(() => {
+    if (!hasJoined || !isConnected) return
+
+    // Update current user's status in the participants list immediately
+    setParticipants(prev => prev.map(p => 
+      p.id === currentUserId 
+        ? { ...p, isMuted, isVideoEnabled }
+        : p
+    ))
+
+    // Also update in database
+    const updateStatus = async () => {
+      try {
+        const supabase = createSupabaseClient()
+        if (!supabase) return
+
+        const { error } = await supabase
+          .from('meeting_participants')
+          .update({
+            is_muted: isMuted,
+            is_video_enabled: isVideoEnabled
+          })
+          .eq('room_id', roomId)
+          .eq('user_id', currentUserId)
+
+        if (error) {
+          console.log('Error updating status:', error.message)
+        }
+      } catch (error) {
+        console.error('Error updating participant status:', error)
+      }
+    }
+
+    updateStatus()
+  }, [isMuted, isVideoEnabled, hasJoined, isConnected, roomId, currentUserId])
 
   // TODO: Implement real-time participant management with Supabase
   // TODO: Implement LiveKit integration for video/audio
+
+  // Pre-meeting screen
+  if (!hasJoined) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        {/* Background Effects */}
+        <div className="fixed inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-black via-dark-900 to-black"></div>
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl animate-pulse-slow"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-neon-purple/10 rounded-full blur-3xl animate-pulse-slow delay-1000"></div>
+        </div>
+
+        <div className="relative z-10 w-full max-w-md px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-dark rounded-2xl p-8"
+          >
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-purple rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Video className="h-8 w-8 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">Join Meeting</h1>
+              <p className="text-gray-400">Room ID: {roomId}</p>
+            </div>
+
+            {/* Preview Area */}
+            <div className="video-container mb-6 bg-gradient-to-br from-dark-800 to-dark-900">
+              <div className="w-full h-full flex items-center justify-center relative">
+                {isVideoEnabled ? (
+                  <div className="text-center">
+                    <div className="w-20 h-20 bg-gradient-to-r from-neon-blue to-neon-purple rounded-full flex items-center justify-center mx-auto mb-4">
+                      <User className="h-10 w-10 text-white" />
+                    </div>
+                    <p className="text-white font-medium">{userName || 'Your Video'}</p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <VideoOff className="h-12 w-12 text-gray-500 mx-auto mb-2" />
+                    <p className="text-gray-400">Camera off</p>
+                  </div>
+                )}
+
+                {/* Controls overlay */}
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                  <button
+                    onClick={() => setIsMuted(!isMuted)}
+                    className={`toolbar-button ${isMuted ? 'danger' : 'active'}`}
+                  >
+                    {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </button>
+                  <button
+                    onClick={() => setIsVideoEnabled(!isVideoEnabled)}
+                    className={`toolbar-button ${!isVideoEnabled ? 'danger' : 'active'}`}
+                  >
+                    {isVideoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Name Input */}
+            <div className="space-y-4 mb-6">
+              <div>
+                <label htmlFor="userName" className="block text-sm font-medium text-gray-300 mb-2">
+                  Your Name
+                </label>
+                <input
+                  id="userName"
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="Enter your name"
+                  className="input-dark w-full"
+                  onKeyPress={(e) => e.key === 'Enter' && handleJoinMeeting()}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Join Button */}
+            <button
+              onClick={handleJoinMeeting}
+              disabled={isJoining || !userName.trim()}
+              className="btn-primary w-full flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isJoining ? (
+                <>
+                  <div className="spinner-sm"></div>
+                  <span>Joining Meeting...</span>
+                </>
+              ) : (
+                <>
+                  <Video className="h-5 w-5" />
+                  <span>Join Meeting</span>
+                  <ArrowRight className="h-5 w-5" />
+                </>
+              )}
+            </button>
+
+            {/* Meeting Info */}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-400">
+                By joining, you agree to our meeting guidelines
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    )
+  }
 
   if (!isConnected) {
     return (
