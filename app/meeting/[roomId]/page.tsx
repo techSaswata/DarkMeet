@@ -60,11 +60,12 @@ export default function MeetingRoomPage() {
     }
 
     const initializeMeeting = async () => {
+      console.log('Initializing meeting for room:', roomId)
+      
       try {
         const supabase = createSupabaseClient()
         if (!supabase) {
           console.log('Supabase not available, using mock data')
-          setIsConnected(true)
           setParticipants([
             { 
               id: currentUserId, 
@@ -74,14 +75,13 @@ export default function MeetingRoomPage() {
               isVideoEnabled: true 
             }
           ])
+          setIsConnected(true)
           return
         }
 
-        // Create meeting_participants table structure if needed
-        // Note: This would typically be done via Supabase migrations
-        
         // Generate a display name (in real app, this would come from auth)
         const displayName = `User ${Math.floor(Math.random() * 1000)}`
+        console.log('Generated display name:', displayName)
         
         // Add current user to participants
         const { error: insertError } = await supabase
@@ -98,7 +98,7 @@ export default function MeetingRoomPage() {
 
         if (insertError) {
           console.log('Insert error (table might not exist):', insertError.message)
-          // Fallback to mock data
+          // Fallback to mock data but still connect
           setParticipants([
             { 
               id: currentUserId, 
@@ -108,7 +108,10 @@ export default function MeetingRoomPage() {
               isVideoEnabled: true 
             }
           ])
+          setIsConnected(true)
         } else {
+          console.log('Successfully inserted participant into database')
+          
           // Subscribe to real-time changes
           const subscription = supabase
             .channel('meeting-participants')
@@ -128,10 +131,11 @@ export default function MeetingRoomPage() {
 
           // Initial fetch
           await fetchParticipants(supabase)
+          setIsConnected(true)
 
-          // Cleanup function
+          // Cleanup function - return it properly
           return () => {
-            // Remove user from participants when leaving
+            console.log('Cleaning up participant subscription')
             supabase
               .from('meeting_participants')
               .delete()
@@ -143,12 +147,9 @@ export default function MeetingRoomPage() {
           }
         }
 
-        setIsConnected(true)
-
       } catch (error) {
         console.error('Error initializing meeting:', error)
-        // Fallback to mock data
-        setIsConnected(true)
+        // Always connect even if there are database issues
         setParticipants([
           { 
             id: currentUserId, 
@@ -158,13 +159,38 @@ export default function MeetingRoomPage() {
             isVideoEnabled: true 
           }
         ])
+        setIsConnected(true)
       }
     }
 
-    initializeMeeting()
+    // Add a timeout to ensure meeting starts even if database is slow
+    const timeoutId = setTimeout(() => {
+      console.log('Meeting initialization timeout - connecting anyway')
+      if (!isConnected) {
+        setParticipants([
+          { 
+            id: currentUserId, 
+            name: 'You', 
+            isHost: true, 
+            isMuted: false, 
+            isVideoEnabled: true 
+          }
+        ])
+        setIsConnected(true)
+      }
+    }, 5000) // 5 second timeout
+
+    initializeMeeting().then((cleanup) => {
+      clearTimeout(timeoutId)
+      // Store cleanup function for later use
+      if (cleanup) {
+        // We'll handle cleanup in the useEffect return
+      }
+    })
 
     // Cleanup on unmount
     return () => {
+      clearTimeout(timeoutId)
       const supabase = createSupabaseClient()
       if (supabase) {
         supabase
@@ -175,7 +201,7 @@ export default function MeetingRoomPage() {
           .then(() => console.log('Cleanup: User removed from meeting'))
       }
     }
-  }, [roomId, currentUserId])
+  }, [roomId, currentUserId, isConnected])
 
   // TODO: Implement real-time participant management with Supabase
   // TODO: Implement LiveKit integration for video/audio
