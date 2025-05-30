@@ -10,6 +10,7 @@ import { ParticipantsPanel } from '@/components/meeting/participants-panel'
 import { AIAssistant } from '@/components/meeting/ai-assistant'
 import { Whiteboard } from '@/components/meeting/whiteboard'
 import { ScreenShare } from '@/components/meeting/screen-share'
+import { createSupabaseClient } from '@/lib/supabase'
 
 interface Participant {
   id: string
@@ -34,25 +35,147 @@ export default function MeetingRoomPage() {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true)
   const [isRecording, setIsRecording] = useState(false)
   const [participants, setParticipants] = useState<Participant[]>([])
+  const [currentUserId] = useState(() => `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
 
   useEffect(() => {
-    // Simulate connection and add current user as participant
-    const timer = setTimeout(() => {
-      setIsConnected(true)
-      // Add current user as the first participant (host)
-      setParticipants([
-        { 
-          id: 'current-user', 
-          name: 'You', 
-          isHost: true, 
-          isMuted: false, 
-          isVideoEnabled: true 
-        }
-      ])
-    }, 2000)
+    const fetchParticipants = async (supabase: any) => {
+      const { data, error } = await supabase
+        .from('meeting_participants')
+        .select('*')
+        .eq('room_id', roomId)
+        .order('joined_at', { ascending: true })
 
-    return () => clearTimeout(timer)
-  }, [])
+      if (error) {
+        console.error('Error fetching participants:', error)
+      } else {
+        const formattedParticipants = data.map((p: any) => ({
+          id: p.user_id,
+          name: p.user_id === currentUserId ? 'You' : p.display_name,
+          isHost: p.is_host,
+          isMuted: p.is_muted,
+          isVideoEnabled: p.is_video_enabled
+        }))
+        setParticipants(formattedParticipants)
+      }
+    }
+
+    const initializeMeeting = async () => {
+      try {
+        const supabase = createSupabaseClient()
+        if (!supabase) {
+          console.log('Supabase not available, using mock data')
+          setIsConnected(true)
+          setParticipants([
+            { 
+              id: currentUserId, 
+              name: 'You', 
+              isHost: true, 
+              isMuted: false, 
+              isVideoEnabled: true 
+            }
+          ])
+          return
+        }
+
+        // Create meeting_participants table structure if needed
+        // Note: This would typically be done via Supabase migrations
+        
+        // Generate a display name (in real app, this would come from auth)
+        const displayName = `User ${Math.floor(Math.random() * 1000)}`
+        
+        // Add current user to participants
+        const { error: insertError } = await supabase
+          .from('meeting_participants')
+          .insert({
+            room_id: roomId,
+            user_id: currentUserId,
+            display_name: displayName,
+            is_host: true, // First user is host (simplified logic)
+            is_muted: false,
+            is_video_enabled: true,
+            joined_at: new Date().toISOString()
+          })
+
+        if (insertError) {
+          console.log('Insert error (table might not exist):', insertError.message)
+          // Fallback to mock data
+          setParticipants([
+            { 
+              id: currentUserId, 
+              name: displayName, 
+              isHost: true, 
+              isMuted: false, 
+              isVideoEnabled: true 
+            }
+          ])
+        } else {
+          // Subscribe to real-time changes
+          const subscription = supabase
+            .channel('meeting-participants')
+            .on('postgres_changes', 
+              { 
+                event: '*', 
+                schema: 'public', 
+                table: 'meeting_participants',
+                filter: `room_id=eq.${roomId}`
+              }, 
+              (payload) => {
+                console.log('Participant change:', payload)
+                fetchParticipants(supabase)
+              }
+            )
+            .subscribe()
+
+          // Initial fetch
+          await fetchParticipants(supabase)
+
+          // Cleanup function
+          return () => {
+            // Remove user from participants when leaving
+            supabase
+              .from('meeting_participants')
+              .delete()
+              .eq('room_id', roomId)
+              .eq('user_id', currentUserId)
+              .then(() => console.log('User removed from meeting'))
+            
+            subscription.unsubscribe()
+          }
+        }
+
+        setIsConnected(true)
+
+      } catch (error) {
+        console.error('Error initializing meeting:', error)
+        // Fallback to mock data
+        setIsConnected(true)
+        setParticipants([
+          { 
+            id: currentUserId, 
+            name: 'You', 
+            isHost: true, 
+            isMuted: false, 
+            isVideoEnabled: true 
+          }
+        ])
+      }
+    }
+
+    initializeMeeting()
+
+    // Cleanup on unmount
+    return () => {
+      const supabase = createSupabaseClient()
+      if (supabase) {
+        supabase
+          .from('meeting_participants')
+          .delete()
+          .eq('room_id', roomId)
+          .eq('user_id', currentUserId)
+          .then(() => console.log('Cleanup: User removed from meeting'))
+      }
+    }
+  }, [roomId, currentUserId])
 
   // TODO: Implement real-time participant management with Supabase
   // TODO: Implement LiveKit integration for video/audio
