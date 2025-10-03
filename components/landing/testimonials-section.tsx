@@ -5,42 +5,42 @@ import { Star, Quote } from 'lucide-react'
 
 const testimonials = [
   {
-    name: 'Sarah Chen',
+    name: 'Sarah',
     role: 'Product Manager at TechCorp',
     avatar: '👩‍💼',
     rating: 5,
     content: 'DarkMeet has revolutionized our remote meetings. The AI features are incredible - it actually understands context and provides meaningful insights. The dark UI is easy on the eyes during long sessions.'
   },
   {
-    name: 'Marcus Rodriguez',
+    name: 'Harshit',
     role: 'CEO at StartupXYZ',
     avatar: '👨‍💼',
     rating: 5,
     content: 'The AI meeting summaries save us hours every week. No more manual note-taking! The voice commands feature is a game-changer for presentations. Highly recommend for any serious business.'
   },
   {
-    name: 'Dr. Emily Watson',
+    name: 'Ankita',
     role: 'Research Director',
     avatar: '👩‍🔬',
     rating: 5,
     content: 'As someone who conducts international research collaborations, the real-time translation feature is phenomenal. The quality is better than any other platform I\'ve used.'
   },
   {
-    name: 'Alex Thompson',
+    name: 'Raj',
     role: 'Design Lead at CreativeStudio',
     avatar: '👨‍🎨',
     rating: 5,
     content: 'The AI whiteboard is absolutely mind-blowing. I can sketch rough ideas and it converts them into professional diagrams instantly. It\'s like having a design assistant in every meeting.'
   },
   {
-    name: 'Lisa Park',
+    name: 'Ankita',
     role: 'HR Director',
     avatar: '👩‍💻',
     rating: 5,
     content: 'The emotion analytics help us understand team dynamics better. We can see engagement levels and adjust our meeting styles accordingly. It\'s made our team more connected.'
   },
   {
-    name: 'James Wilson',
+    name: 'Vikram',
     role: 'CTO at DataFlow',
     avatar: '👨‍💻',
     rating: 5,

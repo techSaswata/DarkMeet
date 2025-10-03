@@ -1,7 +1,5 @@
 # DarkMeet - Next-Gen Video Conferencing Platform
 
-![DarkMeet Logo](https://via.placeholder.com/200x80/000000/00d4ff?text=DarkMeet)
-
 ## 🌟 Overview
 
 DarkMeet is a cutting-edge video conferencing platform that combines stunning dark aesthetics with AI-powered features. Built with Next.js 14, TypeScript, and Tailwind CSS, it offers a modern alternative to traditional video conferencing solutions.
@@ -239,9 +237,6 @@ Optimized configuration with:
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
@@ -254,10 +249,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-For support, email support@darkmeet.com or join our Discord community.
+For support, join our Discord community.
 
 ---
 
-**Built with ❤️ by techSaswata**
+**Built with ❤️ by techy**
 
  

@@ -188,6 +188,5 @@ livekit-*
 *.backup
 *.old
 
-# Database Schema and Setup Files
-supabase-schema.sql
-SETUP_PARTICIPANTS.md 
+# Local development history folder
+.history

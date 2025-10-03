@@ -21,13 +21,13 @@ export function StatsSection() {
     setStats([
       {
         icon: Users,
-        value: '0',
+        value: '100+',
         label: 'Active Users',
-        description: 'Growing community worldwide'
+        description: 'Growing community'
       },
       {
         icon: Clock,
-        value: '0',
+        value: '500+',
         label: 'Meeting Minutes',
         description: 'Hours of collaboration'
       },
