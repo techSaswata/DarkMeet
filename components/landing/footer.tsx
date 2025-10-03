@@ -36,9 +36,9 @@ const footerLinks = {
 }
 
 const socialLinks = [
-  { name: 'Twitter', icon: Twitter, href: 'https://twitter.com/darkmeet' },
-  { name: 'LinkedIn', icon: Linkedin, href: 'https://linkedin.com/company/darkmeet' },
-  { name: 'GitHub', icon: Github, href: 'https://github.com/darkmeet' }
+  { name: 'X', icon: Twitter, href: 'https://x.com/techSaswata' },
+  { name: 'LinkedIn', icon: Linkedin, href: 'https://linkedin.com/in/techsas' },
+  { name: 'GitHub', icon: Github, href: 'https://github.com/techsaswata/darkmeet' }
 ]
 
 export function Footer() {
@@ -157,7 +157,7 @@ export function Footer() {
         <div className="border-t border-white/10 pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
             <div className="text-gray-400 text-sm">
-              © 2024 DarkMeet. Made with ❤️ by techSas
+              © 2025 DarkMeet. Made with ❤️ by techsas
             </div>
 
             <div className="flex items-center space-x-6">

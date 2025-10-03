@@ -12,14 +12,14 @@ const testimonials = [
     content: 'DarkMeet has revolutionized our remote meetings. The AI features are incredible - it actually understands context and provides meaningful insights. The dark UI is easy on the eyes during long sessions.'
   },
   {
-    name: 'Harshit',
+    name: 'Ravi',
     role: 'CEO at StartupXYZ',
     avatar: '👨‍💼',
-    rating: 5,
+    rating: 4,
     content: 'The AI meeting summaries save us hours every week. No more manual note-taking! The voice commands feature is a game-changer for presentations. Highly recommend for any serious business.'
   },
   {
-    name: 'Ankita',
+    name: 'Emily',
     role: 'Research Director',
     avatar: '👩‍🔬',
     rating: 5,
@@ -29,14 +29,14 @@ const testimonials = [
     name: 'Raj',
     role: 'Design Lead at CreativeStudio',
     avatar: '👨‍🎨',
-    rating: 5,
+    rating: 4.3,
     content: 'The AI whiteboard is absolutely mind-blowing. I can sketch rough ideas and it converts them into professional diagrams instantly. It\'s like having a design assistant in every meeting.'
   },
   {
-    name: 'Ankita',
+    name: 'Aadrita',
     role: 'HR Director',
     avatar: '👩‍💻',
-    rating: 5,
+    rating: 4.9,
     content: 'The emotion analytics help us understand team dynamics better. We can see engagement levels and adjust our meeting styles accordingly. It\'s made our team more connected.'
   },
   {
