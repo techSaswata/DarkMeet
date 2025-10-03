@@ -249,7 +249,7 @@ Optimized configuration with:
 
 ## 📞 Support
 
-For support, join our Discord community.
+For support, join our [Discord community](https://discord.gg/NPv4zRHQqY).
 
 ---
 
