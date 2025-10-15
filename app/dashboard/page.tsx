@@ -120,10 +120,12 @@ export default function DashboardPage() {
             </Link>
 
             <div className="flex items-center space-x-4">
-              <Link href="/meeting/new" className="btn-primary">
-                <Plus className="h-4 w-4 mr-2" />
+              <div className='flex items-center justify-center'>
+                <Link href="/meeting/new" className="btn-primary flex items-center">
+                <Plus className=" h-4 w-4 mr-2" />
                 New Meeting
               </Link>
+              </div>
               
               <button className="toolbar-button">
                 <Settings className="h-5 w-5" />
@@ -243,10 +245,12 @@ export default function DashboardPage() {
                     <Video className="h-16 w-16 text-gray-600 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-gray-400 mb-2">No recent meetings</h3>
                     <p className="text-gray-500 mb-6">Start your first meeting to see it here</p>
-                    <Link href="/meeting/new" className="btn-primary">
+                    <div className='inline-block'>
+                      <Link href="/meeting/new" className="btn-primary flex items-center justify-center">
                       <Plus className="h-4 w-4 mr-2" />
                       Start Meeting
                     </Link>
+                    </div>
                   </div>
                 ) : (
                   recentMeetings.map((meeting, index) => (
@@ -292,10 +296,12 @@ export default function DashboardPage() {
                     <Calendar className="h-16 w-16 text-gray-600 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-gray-400 mb-2">No scheduled meetings</h3>
                     <p className="text-gray-500 mb-6">Schedule a meeting to see it here</p>
-                    <Link href="/meeting/new" className="btn-primary">
+                    <div className='inline-block'>
+                      <Link href="/meeting/new" className="btn-primary flex justify-center items-center btn-primary">
                       <Calendar className="h-4 w-4 mr-2" />
                       Schedule Meeting
                     </Link>
+                    </div>
                   </div>
                 ) : (
                   scheduledMeetings.map((meeting, index) => (
@@ -343,10 +349,12 @@ export default function DashboardPage() {
                     <Play className="h-16 w-16 text-gray-600 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-gray-400 mb-2">No recordings</h3>
                     <p className="text-gray-500 mb-6">Enable recording in your meetings to see them here</p>
-                    <Link href="/meeting/new" className="btn-primary">
+                    <div className='inline-block'>
+                      <Link href="/meeting/new" className="flex justify-center items-center btn-primary">
                       <Video className="h-4 w-4 mr-2" />
                       Start Recording
                     </Link>
+                    </div>
                   </div>
                 ) : (
                   recordings.map((recording, index) => (
