@@ -86,7 +86,7 @@ export function TestimonialsSection() {
             >
               <div className="glass-dark rounded-2xl p-6 h-full transition-all duration-300 hover:neon-glow-purple hover:scale-105">
                 <div className="flex items-center space-x-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
+                  {Array.from({ length: Math.max(0, Math.min(5, Math.floor(Number(testimonial?.rating) ?? 0))) }).map((_, i) => (
                     <Star key={i} className="h-5 w-5 text-neon-yellow fill-current" />
                   ))}
                 </div>
