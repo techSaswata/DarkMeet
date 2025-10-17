@@ -1,3 +1,4 @@
+```json
 {
   "name": "darkmeet",
   "version": "0.1.0",
@@ -57,6 +58,7 @@
   "devDependencies": {
     "eslint": "^8.56.0",
     "eslint-config-next": "14.0.4",
-    "@types/node": "^20.10.5"
+     "@types/node": "^20.10.5"
   }
-} 
+}
+```
