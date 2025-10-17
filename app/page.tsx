@@ -28,7 +28,7 @@ import { Footer } from '@/components/landing/footer'
 import { Navbar } from '@/components/landing/navbar'
 
 export default function HomePage() {
-  const [mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState(true)
 
   useEffect(() => {
     setMounted(true)
