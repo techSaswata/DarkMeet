@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { createSupabaseClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import BackButton from '@/components/landing/BackButton'
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false)
@@ -109,6 +110,8 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-black">
+      {/* Back Button */}
+       <BackButton />
       {/* Background Effects */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-dark-900 to-black"></div>
