@@ -97,4 +97,15 @@ export interface Recording {
   transcription?: string
   ai_summary?: string
   created_at: string
+}
+
+export interface ContactMessage {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  message: string
+  status: 'unread' | 'read' | 'replied' | 'archived'
+  created_at: string
+  updated_at: string
 } 
