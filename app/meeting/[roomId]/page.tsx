@@ -373,20 +373,20 @@ export default function MeetingRoomPage() {
             </div>
 
             {/* Preview Area */}
-            <div className="video-container mb-6 bg-gradient-to-br from-dark-800 to-dark-900">
+            <div className="video-container mb-6 bg-gradient-to-br from-dark-800 to-dark-900 z-10">
               <div className="w-full h-full flex items-center justify-center relative">
                 {isVideoEnabled ? (
-                  <div className="text-center">
-                    <div className="w-20 h-20 bg-gradient-to-r from-neon-blue to-neon-purple rounded-full flex items-center justify-center mx-auto mb-4">
-                      <User className="h-10 w-10 text-white" />
+                    <div className="text-center">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-neon-blue to-neon-purple rounded-full flex items-center justify-center mx-auto mb-2">
+                        <User className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
+                      </div>
+                      <p className="text-white font-medium mb-12 sm:mb-16 text-sm sm:text-base">{userName || 'Your Video'}</p>
                     </div>
-                    <p className="text-white font-medium">{userName || 'Your Video'}</p>
-                  </div>
                 ) : (
-                  <div className="text-center">
-                    <VideoOff className="h-12 w-12 text-gray-500 mx-auto mb-2" />
-                    <p className="text-gray-400">Camera off</p>
-                  </div>
+                    <div className="text-center mb-16 sm:mb-20">
+                    <VideoOff className="h-8 w-8 sm:h-12 sm:w-12 text-gray-500 mx-auto mb-2" />
+                    <p className="text-gray-400 text-sm sm:text-base">Camera off</p>
+                    </div>
                 )}
 
                 {/* Controls overlay */}
@@ -410,7 +410,7 @@ export default function MeetingRoomPage() {
             {/* Name Input */}
             <div className="space-y-4 mb-6">
               <div>
-                <label htmlFor="userName" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="userName" className="block text-sm font-medium text-gray-300 mb-2 ">
                   Your Name
                 </label>
                 <input
