@@ -376,11 +376,11 @@ export default function MeetingRoomPage() {
             <div className="video-container mb-6 bg-gradient-to-br from-dark-800 to-dark-900">
               <div className="w-full h-full flex items-center justify-center relative">
                 {isVideoEnabled ? (
-                  <div className="text-center">
-                    <div className="w-20 h-20 bg-gradient-to-r from-neon-blue to-neon-purple rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="text-center mb-16">
+                    <div className="w-20 h-20 bg-gradient-to-r from-neon-blue to-neon-purple rounded-full flex items-center justify-center mx-auto mb-2">
                       <User className="h-10 w-10 text-white" />
                     </div>
-                    <p className="text-white font-medium">{userName || 'Your Video'}</p>
+                    <p className="text-white font-medium">{userName || 'Your Name'}</p>
                   </div>
                 ) : (
                   <div className="text-center">
