@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'DarkMeet - Next-Gen Video Conferencing',
   description: 'Experience the future of video conferencing with AI-powered features, stunning dark UI, and seamless collaboration tools.',
+  icons: {
+    icon: '/icon.png',
+  },
   keywords: ['video conferencing', 'AI', 'collaboration', 'dark theme', 'meetings'],
   authors: [{ name: 'DarkMeet Team' }],
   metadataBase: new URL('http://localhost:3000'),
