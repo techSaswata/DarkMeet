@@ -71,9 +71,12 @@ export function MeetingRoom({ roomId, isScreenSharing, participants }: MeetingRo
                   </div>
                 </div>
               ) : (
-                <div className="text-center">
-                  <VideoOff className="h-12 w-12 text-gray-500 mx-auto mb-2" />
-                  <p className="text-gray-400">Camera off</p>
+                <div className="text-center p-4">
+                  <div className="bg-dark-700 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-3">
+                    <VideoOff className="h-10 w-10 text-gray-500" />
+                  </div>
+                  <p className="text-gray-400 text-sm">Camera off</p>
+                  <p className="text-gray-500 text-xs mt-1">{participant.name}</p>
                 </div>
               )}
             </div>
@@ -115,6 +118,14 @@ export function MeetingRoom({ roomId, isScreenSharing, participants }: MeetingRo
             {!participant.isMuted && (
               <div className="absolute inset-0 border-4 border-neon-green rounded-2xl animate-pulse-glow"></div>
             )}
+            
+            {/* Camera Access Denied Indicator */}
+            {!participant.isVideoEnabled && (
+              <div className="absolute top-4 left-4 bg-red-500/80 text-white text-xs px-2 py-1 rounded flex items-center">
+                <VideoOff className="h-3 w-3 mr-1" />
+                No camera
+              </div>
+            )}
           </motion.div>
         ))}
       </div>
@@ -129,6 +140,19 @@ export function MeetingRoom({ roomId, isScreenSharing, participants }: MeetingRo
           <p className="text-neon-blue font-medium">Screen sharing is active</p>
         </motion.div>
       )}
+      
+      {/* Camera Access Help Text */}
+      {participants.some(p => !p.isVideoEnabled) && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 glass-dark rounded-lg p-4 text-center"
+        >
+          <p className="text-gray-400 text-sm">
+            Some participants have their cameras turned off or denied camera access
+          </p>
+        </motion.div>
+      )}
     </div>
   )
-} 
+}
