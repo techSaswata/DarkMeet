@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useParams } from 'next/navigation'
 import { MeetingRoom } from '@/components/meeting/meeting-room'
@@ -11,7 +11,9 @@ import { AIAssistant } from '@/components/meeting/ai-assistant'
 import { Whiteboard } from '@/components/meeting/whiteboard'
 import { ScreenShare } from '@/components/meeting/screen-share'
 import { createSupabaseClient } from '@/lib/supabase'
-import { Video, User, ArrowRight, Mic, MicOff, VideoOff } from 'lucide-react'
+import { Video, User, ArrowRight, Mic, MicOff, VideoOff, AlertCircle } from 'lucide-react'
+// LiveKit imports
+import { Room, RoomEvent, Participant as LiveKitParticipant, RemoteTrackPublication, Track } from 'livekit-client'
 
 interface Participant {
   id: string
@@ -25,6 +27,10 @@ interface Participant {
 export default function MeetingRoomPage() {
   const params = useParams()
   const roomId = params.roomId as string
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [stream, setStream] = useState<MediaStream | null>(null)
+  const [cameraPermission, setCameraPermission] = useState<'prompt' | 'granted' | 'denied' | 'notRequested'>('notRequested')
+  const [liveKitRoom, setLiveKitRoom] = useState<Room | null>(null)
   
   // Pre-meeting states
   const [hasJoined, setHasJoined] = useState(false)
@@ -44,20 +50,199 @@ export default function MeetingRoomPage() {
   const [participants, setParticipants] = useState<Participant[]>([])
   const [currentUserId] = useState(() => `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
 
+  // Request camera permission with enhanced error handling
+  const requestCameraPermission = async () => {
+    try {
+      setCameraPermission('prompt')
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
+        audio: true 
+      })
+      setStream(mediaStream)
+      setCameraPermission('granted')
+      
+      // Attach stream to video element if available
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream
+      }
+      
+      return mediaStream
+    } catch (error: any) {
+      console.error('Camera permission denied:', error)
+      setCameraPermission('denied')
+      // Set video to disabled if permission is denied
+      setIsVideoEnabled(false)
+      
+      // Show specific error messages based on the error type
+      let errorMessage = 'Camera access was denied. You can still join the meeting but others won\'t see your video.'
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Camera access was blocked. Please allow camera access in your browser settings and try again.'
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'No camera found. Please connect a camera device and try again.'
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = 'Camera is being used by another application. Please close other applications using the camera and try again.'
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage = 'Your camera does not support the required video constraints. Please try a different camera.'
+      }
+      
+      // Show error message to user
+      alert(errorMessage)
+      
+      return null
+    }
+  }
+
+  // Connect to LiveKit room
+  const connectToLiveKit = async (token: string) => {
+    try {
+      const room = new Room({
+        adaptiveStream: true,
+        dynacast: true,
+        videoCaptureDefaults: {
+          resolution: {
+            width: 1280,
+            height: 720,
+          },
+        },
+      })
+
+      // Set up event listeners
+      room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
+      room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
+      room.on(RoomEvent.ActiveSpeakersChanged, handleActiveSpeakersChanged)
+      room.on(RoomEvent.ParticipantConnected, handleParticipantConnected)
+      room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected)
+
+      // Connect to the room
+      await room.connect(process.env.NEXT_PUBLIC_LIVEKIT_URL!, token)
+      setLiveKitRoom(room)
+
+      // Publish local tracks if we have them
+      if (stream) {
+        await room.localParticipant.enableCameraAndMicrophone()
+        await room.localParticipant.setCameraEnabled(isVideoEnabled)
+        await room.localParticipant.setMicrophoneEnabled(!isMuted)
+      }
+
+      return room
+    } catch (error) {
+      console.error('Error connecting to LiveKit:', error)
+      return null
+    }
+  }
+
+  // Handle track subscribed
+  const handleTrackSubscribed = (
+    track: Track,
+    publication: RemoteTrackPublication,
+    participant: LiveKitParticipant
+  ) => {
+    // Handle incoming tracks
+    console.log('Track subscribed:', track, publication, participant)
+  }
+
+  // Handle track unsubscribed
+  const handleTrackUnsubscribed = (
+    track: Track,
+    publication: RemoteTrackPublication,
+    participant: LiveKitParticipant
+  ) => {
+    // Handle track removal
+    console.log('Track unsubscribed:', track, publication, participant)
+  }
+
+  // Handle active speakers change
+  const handleActiveSpeakersChanged = (speakers: LiveKitParticipant[]) => {
+    // Handle active speakers change
+    console.log('Active speakers changed:', speakers)
+  }
+
+  // Handle participant connected
+  const handleParticipantConnected = (participant: LiveKitParticipant) => {
+    console.log('Participant connected:', participant)
+    // Update participants list
+    setParticipants(prev => {
+      const exists = prev.find(p => p.id === participant.identity)
+      if (exists) return prev
+      return [...prev, {
+        id: participant.identity,
+        name: participant.name || participant.identity,
+        isHost: false, // Would need to determine this from your app logic
+        isMuted: participant.isMicrophoneEnabled === false,
+        isVideoEnabled: participant.isCameraEnabled === true
+      }]
+    })
+  }
+
+  // Handle participant disconnected
+  const handleParticipantDisconnected = (participant: LiveKitParticipant) => {
+    console.log('Participant disconnected:', participant)
+    // Remove participant from list
+    setParticipants(prev => prev.filter(p => p.id !== participant.identity))
+  }
+
+  // Get LiveKit token from your backend
+  const getLiveKitToken = async (): Promise<string> => {
+    // In a real implementation, this would call your backend to get a token
+    // For now, we'll return a placeholder - you would implement this with your backend
+    try {
+      const response = await fetch('/api/livekit/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          room: roomId,
+          username: userName,
+          userId: currentUserId,
+        }),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to get token')
+      }
+      
+      const data = await response.json()
+      return data.token
+    } catch (error) {
+      console.error('Error getting LiveKit token:', error)
+      throw error
+    }
+  }
+
   const handleJoinMeeting = async () => {
     if (!userName.trim()) {
       alert('Please enter your name')
       return
     }
 
+    // Request camera permission before joining
+    const stream = await requestCameraPermission()
+    if (cameraPermission === 'denied') {
+      const shouldContinue = confirm('Camera access was denied. You can still join the meeting but others won\'t see your video. Do you want to continue?')
+      if (!shouldContinue) {
+        return
+      }
+    }
+
     setIsJoining(true)
 
     try {
+      // Get LiveKit token and connect
+      const token = await getLiveKitToken()
+      const room = await connectToLiveKit(token)
+      
+      if (!room) {
+        throw new Error('Failed to connect to LiveKit')
+      }
+
       // Simulate a brief delay for better UX
       await new Promise(resolve => setTimeout(resolve, 1000))
       setHasJoined(true)
     } catch (error) {
       console.error('Error joining meeting:', error)
+      alert('Failed to join meeting. Please try again.')
       setIsJoining(false)
     }
   }
@@ -104,7 +289,7 @@ export default function MeetingRoomPage() {
             name: 'You',
             isHost: false, // Default to non-host when offline
             isMuted: false,
-            isVideoEnabled: true
+            isVideoEnabled: cameraPermission === 'granted' // Only enable video if permission was granted
           }
           setParticipants([currentUser])
           setIsConnected(true)
@@ -153,7 +338,7 @@ export default function MeetingRoomPage() {
           name: 'You',
           isHost: isHost,
           isMuted: false,
-          isVideoEnabled: true
+          isVideoEnabled: cameraPermission === 'granted' // Only enable video if permission was granted
         }
         setParticipants([currentUser])
         setIsConnected(true) // Connect immediately for better UX
@@ -167,7 +352,7 @@ export default function MeetingRoomPage() {
             display_name: userName,
             is_host: isHost, // Based on meeting creator, not join order
             is_muted: false, // Start with default values
-            is_video_enabled: true,
+            is_video_enabled: cameraPermission === 'granted', // Only enable video if permission was granted
             joined_at: new Date().toISOString()
           })
 
@@ -262,6 +447,11 @@ export default function MeetingRoomPage() {
               .then(() => console.log('User removed from meeting'))
             
             subscription.unsubscribe()
+            
+            // Disconnect from LiveKit room
+            if (liveKitRoom) {
+              liveKitRoom.disconnect()
+            }
           }
         }
 
@@ -280,7 +470,7 @@ export default function MeetingRoomPage() {
             name: 'You', 
             isHost: true, 
             isMuted: false, 
-            isVideoEnabled: true 
+            isVideoEnabled: cameraPermission === 'granted' // Only enable video if permission was granted
           }
         ])
         setIsConnected(true)
@@ -303,8 +493,18 @@ export default function MeetingRoomPage() {
           .eq('user_id', currentUserId)
           .then(() => console.log('Cleanup: User removed from meeting'))
       }
+      
+      // Stop all tracks in the stream when component unmounts
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      // Disconnect from LiveKit room
+      if (liveKitRoom) {
+        liveKitRoom.disconnect()
+      }
     }
-  }, [roomId, currentUserId, userName, hasJoined]) // Removed isMuted and isVideoEnabled
+  }, [roomId, currentUserId, userName, hasJoined, stream, cameraPermission, liveKitRoom]) // Added liveKitRoom
 
   // Separate effect to update current user's mic/video status
   useEffect(() => {
@@ -341,10 +541,54 @@ export default function MeetingRoomPage() {
     }
 
     updateStatus()
-  }, [isMuted, isVideoEnabled, hasJoined, isConnected, roomId, currentUserId])
+    
+    // Update LiveKit status
+    if (liveKitRoom) {
+      liveKitRoom.localParticipant.setMicrophoneEnabled(!isMuted)
+      liveKitRoom.localParticipant.setCameraEnabled(isVideoEnabled)
+    }
+  }, [isMuted, isVideoEnabled, hasJoined, isConnected, roomId, currentUserId, liveKitRoom])
 
-  // TODO: Implement real-time participant management with Supabase
-  // TODO: Implement LiveKit integration for video/audio
+  // Toggle video functionality with permission handling
+  const handleToggleVideo = async () => {
+    if (!isVideoEnabled) {
+      // Trying to enable video, check if we have permission
+      if (cameraPermission === 'denied') {
+        // Request permission again
+        const stream = await requestCameraPermission()
+        if (stream) {
+          setIsVideoEnabled(true)
+        }
+      } else if (cameraPermission === 'granted' && stream) {
+        setIsVideoEnabled(true)
+      } else {
+        // Request permission for the first time
+        const stream = await requestCameraPermission()
+        if (stream) {
+          setIsVideoEnabled(true)
+        }
+      }
+    } else {
+      // Disable video
+      setIsVideoEnabled(false)
+    }
+    
+    // Update LiveKit status
+    if (liveKitRoom) {
+      liveKitRoom.localParticipant.setCameraEnabled(!isVideoEnabled)
+    }
+  }
+
+  // Toggle mute functionality
+  const handleToggleMute = () => {
+    const newMutedState = !isMuted
+    setIsMuted(newMutedState)
+    
+    // Update LiveKit status
+    if (liveKitRoom) {
+      liveKitRoom.localParticipant.setMicrophoneEnabled(!newMutedState)
+    }
+  }
 
   // Pre-meeting screen
   if (!hasJoined) {
@@ -373,14 +617,29 @@ export default function MeetingRoomPage() {
             </div>
 
             {/* Preview Area */}
-            <div className="video-container mb-6 bg-gradient-to-br from-dark-800 to-dark-900">
+            <div className="video-container mb-6 bg-gradient-to-br from-dark-800 to-dark-900 relative">
               <div className="w-full h-full flex items-center justify-center relative">
-                {isVideoEnabled ? (
-                  <div className="text-center mb-16">
-                    <div className="w-20 h-20 bg-gradient-to-r from-neon-blue to-neon-purple rounded-full flex items-center justify-center mx-auto mb-2">
-                      <User className="h-10 w-10 text-white" />
-                    </div>
-                    <p className="text-white font-medium">{userName || 'Your Name'}</p>
+                {isVideoEnabled && cameraPermission === 'granted' ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center">
+                    <video 
+                      ref={videoRef}
+                      autoPlay 
+                      muted 
+                      playsInline
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                    <p className="text-white font-medium mt-2">{userName || 'Your Name'}</p>
+                  </div>
+                ) : isVideoEnabled && cameraPermission === 'denied' ? (
+                  <div className="text-center p-4">
+                    <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
+                    <p className="text-red-400 mb-2">Camera access denied</p>
+                    <p className="text-gray-400 text-sm">Click the video button to try again</p>
+                  </div>
+                ) : isVideoEnabled && cameraPermission === 'prompt' ? (
+                  <div className="text-center">
+                    <div className="spinner mb-2"></div>
+                    <p className="text-gray-400">Requesting camera access...</p>
                   </div>
                 ) : (
                   <div className="text-center">
@@ -389,16 +648,28 @@ export default function MeetingRoomPage() {
                   </div>
                 )}
 
+                {/* Camera permission status indicator */}
+                {cameraPermission === 'denied' && (
+                  <div className="absolute top-2 right-2 bg-red-500/80 text-white text-xs px-2 py-1 rounded">
+                    Access denied
+                  </div>
+                )}
+                {cameraPermission === 'granted' && (
+                  <div className="absolute top-2 right-2 bg-green-500/80 text-white text-xs px-2 py-1 rounded">
+                    Access granted
+                  </div>
+                )}
+
                 {/* Controls overlay */}
                 <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
                   <button
-                    onClick={() => setIsMuted(!isMuted)}
+                    onClick={handleToggleMute}
                     className={`toolbar-button ${isMuted ? 'danger' : 'active'}`}
                   >
                     {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                   </button>
                   <button
-                    onClick={() => setIsVideoEnabled(!isVideoEnabled)}
+                    onClick={handleToggleVideo}
                     className={`toolbar-button ${!isVideoEnabled ? 'danger' : 'active'}`}
                   >
                     {isVideoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
@@ -425,6 +696,27 @@ export default function MeetingRoomPage() {
                 />
               </div>
             </div>
+
+            {/* Permission Status */}
+            {cameraPermission === 'denied' && (
+              <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded-lg">
+                <div className="flex items-start">
+                  <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
+                  <div>
+                    <p className="text-red-300 font-medium text-sm">Camera access denied</p>
+                    <p className="text-red-400 text-xs mt-1">
+                      You can still join the meeting but others won't see your video. 
+                      To enable video:
+                    </p>
+                    <ul className="text-red-400 text-xs mt-1 list-disc list-inside">
+                      <li>Click the camera button to retry</li>
+                      <li>Check your browser permissions</li>
+                      <li>Ensure no other app is using your camera</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Join Button */}
             <button
@@ -556,8 +848,8 @@ export default function MeetingRoomPage() {
         isParticipantsOpen={isParticipantsOpen}
         isAIOpen={isAIOpen}
         isWhiteboardOpen={isWhiteboardOpen}
-        onToggleMute={() => setIsMuted(!isMuted)}
-        onToggleVideo={() => setIsVideoEnabled(!isVideoEnabled)}
+        onToggleMute={handleToggleMute}
+        onToggleVideo={handleToggleVideo}
         onToggleRecording={() => setIsRecording(!isRecording)}
         onToggleScreenShare={() => setIsScreenSharing(!isScreenSharing)}
         onToggleChat={() => setIsChatOpen(!isChatOpen)}
@@ -568,4 +860,4 @@ export default function MeetingRoomPage() {
       />
     </div>
   )
-} 
+}
