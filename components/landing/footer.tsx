@@ -1,7 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Video, Mail, MapPin, Phone, Github, X , Linkedin } from 'lucide-react'
+import { Video, Mail, MapPin, Phone, Github, Linkedin } from 'lucide-react'
+import X_Icons from '@/components/footer/x_icons'
 import Link from 'next/link'
 
 // Only include links that exist in the `app/` directory or safe anchors.
@@ -23,7 +24,7 @@ const footerLinks = {
 }
 
 const socialLinks = [
-  { name: 'X', icon: X, href: 'https://x.com/techSaswata' },
+  { name: 'X', icon: X_Icons, href: 'https://x.com/techSaswata' },
   { name: 'LinkedIn', icon: Linkedin, href: 'https://linkedin.com/in/techsas' },
   { name: 'GitHub', icon: Github, href: 'https://github.com/techsaswata/darkmeet' }
 ]
