@@ -10,6 +10,8 @@ import { ParticipantsPanel } from '@/components/meeting/participants-panel'
 import { AIAssistant } from '@/components/meeting/ai-assistant'
 import { Whiteboard } from '@/components/meeting/whiteboard'
 import { ScreenShare } from '@/components/meeting/screen-share'
+import { BreakoutRooms } from '@/components/meeting/breakout-rooms'
+import { Recording } from '@/components/meeting/recording'
 import { createSupabaseClient } from '@/lib/supabase'
 import { Video, User, ArrowRight, Mic, MicOff, VideoOff, AlertCircle } from 'lucide-react'
 // LiveKit imports
@@ -43,6 +45,8 @@ export default function MeetingRoomPage() {
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false)
   const [isAIOpen, setIsAIOpen] = useState(false)
   const [isWhiteboardOpen, setIsWhiteboardOpen] = useState(false)
+  const [isBreakoutRoomsOpen, setIsBreakoutRoomsOpen] = useState(false)
+  const [isRecordingOpen, setIsRecordingOpen] = useState(false)
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoEnabled, setIsVideoEnabled] = useState(true)
@@ -50,14 +54,44 @@ export default function MeetingRoomPage() {
   const [participants, setParticipants] = useState<Participant[]>([])
   const [currentUserId] = useState(() => `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
 
-  // Request camera permission with enhanced error handling
+  // Request camera permission with enhanced error handling and HD quality
   const requestCameraPermission = async () => {
     try {
       setCameraPermission('prompt')
+      
+      const videoConstraints = {
+        width: { ideal: 1920, min: 1280 },
+        height: { ideal: 1080, min: 720 },
+        frameRate: { ideal: 30, min: 15 },
+        facingMode: 'user'
+      }
+      
+      // Enhanced audio constraints for noise suppression
+      const audioConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 48000,
+        channelCount: 2
+      }
+      
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: true 
+        video: videoConstraints,
+        audio: audioConstraints
       })
+      
+      if (mediaStream.getAudioTracks().length > 0) {
+        const audioTrack = mediaStream.getAudioTracks()[0]
+        const settings = audioTrack.getSettings()
+        console.log('Audio settings:', settings)
+        
+        // Enable noise suppression on the track
+        if (audioTrack.getCapabilities) {
+          const capabilities = audioTrack.getCapabilities()
+          console.log('Audio capabilities:', capabilities)
+        }
+      }
+      
       setStream(mediaStream)
       setCameraPermission('granted')
       
@@ -93,7 +127,7 @@ export default function MeetingRoomPage() {
     }
   }
 
-  // Connect to LiveKit room
+  // Connect to LiveKit room with enhanced quality settings
   const connectToLiveKit = async (token: string) => {
     try {
       const room = new Room({
@@ -101,9 +135,23 @@ export default function MeetingRoomPage() {
         dynacast: true,
         videoCaptureDefaults: {
           resolution: {
-            width: 1280,
-            height: 720,
+            width: 1920,
+            height: 1080,
           },
+          frameRate: 30,
+          bitrate: 3000000, // 3 Mbps for HD quality
+        },
+        audioCaptureDefaults: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+        publishDefaults: {
+          videoSimulcastLayers: [
+            { resolution: { width: 1920, height: 1080 }, encoding: { maxBitrate: 3000000 } },
+            { resolution: { width: 1280, height: 720 }, encoding: { maxBitrate: 1500000 } },
+            { resolution: { width: 640, height: 360 }, encoding: { maxBitrate: 500000 } },
+          ],
         },
       })
 
@@ -780,7 +828,12 @@ export default function MeetingRoomPage() {
           
           {/* Screen Share Overlay */}
           {isScreenSharing && (
-            <ScreenShare onClose={() => setIsScreenSharing(false)} />
+            <ScreenShare 
+              onClose={() => setIsScreenSharing(false)} 
+              room={liveKitRoom}
+              isSharing={isScreenSharing}
+              sharerName="You"
+            />
           )}
           
           {/* Whiteboard Overlay */}
@@ -802,6 +855,8 @@ export default function MeetingRoomPage() {
               <ChatPanel
                 roomId={roomId}
                 onClose={() => setIsChatOpen(false)}
+                currentUserId={currentUserId}
+                currentUserName={userName}
               />
             </motion.div>
           )}
@@ -817,6 +872,44 @@ export default function MeetingRoomPage() {
               <ParticipantsPanel
                 participants={participants}
                 onClose={() => setIsParticipantsOpen(false)}
+                currentUserId={currentUserId}
+                roomId={roomId}
+              />
+            </motion.div>
+          )}
+
+          {/* Breakout Rooms Panel */}
+          {isBreakoutRoomsOpen && (
+            <motion.div
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              className="w-96"
+            >
+              <BreakoutRooms
+                roomId={roomId}
+                onClose={() => setIsBreakoutRoomsOpen(false)}
+                currentUserId={currentUserId}
+                participants={participants}
+              />
+            </motion.div>
+          )}
+
+          {/* Recording Panel */}
+          {isRecordingOpen && (
+            <motion.div
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              className="w-96"
+            >
+              <Recording
+                roomId={roomId}
+                onClose={() => setIsRecordingOpen(false)}
+                isRecording={isRecording}
+                onStartRecording={() => setIsRecording(true)}
+                onStopRecording={() => setIsRecording(false)}
+                participants={participants}
               />
             </motion.div>
           )}
@@ -848,6 +941,8 @@ export default function MeetingRoomPage() {
         isParticipantsOpen={isParticipantsOpen}
         isAIOpen={isAIOpen}
         isWhiteboardOpen={isWhiteboardOpen}
+        isBreakoutRoomsOpen={isBreakoutRoomsOpen}
+        isRecordingOpen={isRecordingOpen}
         onToggleMute={handleToggleMute}
         onToggleVideo={handleToggleVideo}
         onToggleRecording={() => setIsRecording(!isRecording)}
@@ -856,6 +951,8 @@ export default function MeetingRoomPage() {
         onToggleParticipants={() => setIsParticipantsOpen(!isParticipantsOpen)}
         onToggleAI={() => setIsAIOpen(!isAIOpen)}
         onToggleWhiteboard={() => setIsWhiteboardOpen(!isWhiteboardOpen)}
+        onToggleBreakoutRooms={() => setIsBreakoutRoomsOpen(!isBreakoutRoomsOpen)}
+        onToggleRecordingPanel={() => setIsRecordingOpen(!isRecordingOpen)}
         roomId={roomId}
       />
     </div>
