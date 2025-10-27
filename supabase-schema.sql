@@ -109,3 +109,18 @@ BEGIN
     WHERE joined_at < NOW() - INTERVAL '24 hours';
 END;
 $$ LANGUAGE plpgsql; 
+CREATE TABLE IF NOT EXISTS user_settings (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id TEXT NOT NULL,            -- Link to your auth user id
+    theme TEXT DEFAULT 'dark',
+    notifications BOOLEAN DEFAULT TRUE,
+    language TEXT DEFAULT 'English',
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
+-- Enable RLS and open up for public (demo, tighten in prod)
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all ops on user_settings" ON user_settings;
+CREATE POLICY "Allow all ops on user_settings"
+ON user_settings FOR ALL TO public USING (true) WITH CHECK (true);
