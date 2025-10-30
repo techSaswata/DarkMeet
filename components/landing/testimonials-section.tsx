@@ -74,7 +74,7 @@ export function TestimonialsSection() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
           {testimonials.map((testimonial, index) => (
             <motion.div
               key={testimonial.name}
@@ -84,14 +84,14 @@ export function TestimonialsSection() {
               viewport={{ once: true }}
               className="group"
             >
-              <div className="glass-dark rounded-2xl p-6 h-full transition-all duration-300 hover:neon-glow-purple hover:scale-105">
+              <div className="glass-dark rounded-2xl p-6 h-full flex flex-col transition-all duration-300 hover:neon-glow-purple hover:scale-105">
                 <div className="flex items-center space-x-1 mb-4">
                   {Array.from({ length: Math.max(0, Math.min(5, Math.floor(Number(testimonial?.rating) ?? 0))) }).map((_, i) => (
                     <Star key={i} className="h-5 w-5 text-neon-yellow fill-current" />
                   ))}
                 </div>
 
-                <div className="relative mb-6">
+                <div className="relative mb-6 flex-1 ">
                   <Quote className="absolute -top-2 -left-2 h-8 w-8 text-neon-blue/30" />
                   <p className="text-gray-300 leading-relaxed pl-6">
                     {testimonial.content}
