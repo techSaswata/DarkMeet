@@ -138,20 +138,11 @@ export default function MeetingRoomPage() {
             width: 1920,
             height: 1080,
           },
-          frameRate: 30,
-          bitrate: 3000000, // 3 Mbps for HD quality
         },
         audioCaptureDefaults: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-        },
-        publishDefaults: {
-          videoSimulcastLayers: [
-            { resolution: { width: 1920, height: 1080 }, encoding: { maxBitrate: 3000000 } },
-            { resolution: { width: 1280, height: 720 }, encoding: { maxBitrate: 1500000 } },
-            { resolution: { width: 640, height: 360 }, encoding: { maxBitrate: 500000 } },
-          ],
         },
       })
 

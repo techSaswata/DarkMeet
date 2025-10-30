@@ -15,8 +15,7 @@ import {
   Settings,
   Circle,
   StopCircle,
-  Users2,
-  Mic
+  Users2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 

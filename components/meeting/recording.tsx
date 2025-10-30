@@ -122,7 +122,12 @@ export function Recording({ roomId, onClose, isRecording, onStartRecording, onSt
       // In a real implementation, you would send this to a transcription service
       // For now, we'll simulate the transcription
       const simulatedTranscription = generateSimulatedTranscription()
-      setTranscription(simulatedTranscription)
+      setRecordingSegments(simulatedTranscription)
+      
+      // Generate text transcription for database
+      const transcriptionText = simulatedTranscription
+        .map(seg => `${seg.speaker}: ${seg.text}`)
+        .join('\n')
       
       // Save recording to database
       if (supabase) {
@@ -131,7 +136,7 @@ export function Recording({ roomId, onClose, isRecording, onStartRecording, onSt
           .insert({
             room_id: roomId,
             duration: recordingDuration,
-            transcription: simulatedTranscription,
+            transcription: transcriptionText,
             created_at: new Date().toISOString()
           })
 
