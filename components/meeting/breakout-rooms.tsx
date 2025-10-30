@@ -64,13 +64,13 @@ export function BreakoutRooms({ roomId, onClose, currentUserId, participants }: 
         }, 
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setBreakoutRooms(prev => [...prev, payload.new])
+            setBreakoutRooms(prev => [...prev, payload.new as BreakoutRoom])
           } else if (payload.eventType === 'UPDATE') {
             setBreakoutRooms(prev => prev.map(room => 
-              room.id === payload.new.id ? payload.new : room
+              room.id === (payload.new as BreakoutRoom).id ? payload.new as BreakoutRoom : room
             ))
           } else if (payload.eventType === 'DELETE') {
-            setBreakoutRooms(prev => prev.filter(room => room.id !== payload.old.id))
+            setBreakoutRooms(prev => prev.filter(room => room.id !== (payload.old as BreakoutRoom).id))
           }
         }
       )

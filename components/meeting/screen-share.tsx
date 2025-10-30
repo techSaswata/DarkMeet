@@ -70,7 +70,7 @@ export function ScreenShare({ onClose, room, isSharing = false, sharerName = 'Un
   const stopScreenShare = async () => {
     if (room && isSharingScreen) {
       // Unpublish screen share tracks
-      const publications = room.localParticipant.trackPublications.values()
+      const publications = Array.from(room.localParticipant.tracks.values())
       for (const publication of publications) {
         if (publication.source === Track.Source.ScreenShare || 
             publication.source === Track.Source.ScreenShareAudio) {
