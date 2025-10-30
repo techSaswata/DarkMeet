@@ -1,110 +1,119 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Video, Users, Settings, Calendar, Copy, ArrowRight, Sparkles, Share2, Check } from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { v4 as uuidv4 } from 'uuid'
-import toast from 'react-hot-toast'
-import { createSupabaseClient } from '@/lib/supabase'
+import { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Video,
+  Users,
+  Settings,
+  Calendar,
+  Copy,
+  ArrowRight,
+  Sparkles,
+  Share2,
+  Check,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { v4 as uuidv4 } from "uuid";
+import toast from "react-hot-toast";
+import { createSupabaseClient } from "@/lib/supabase";
 
 export default function NewMeetingPage() {
-  const router = useRouter()
-  const [meetingTitle, setMeetingTitle] = useState('')
-  const [joinMeetingId, setJoinMeetingId] = useState('')
-  const [isCreating, setIsCreating] = useState(false)
-  const [createdRoomId, setCreatedRoomId] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const router = useRouter();
+  const [meetingTitle, setMeetingTitle] = useState("");
+  const [joinMeetingId, setJoinMeetingId] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [createdRoomId, setCreatedRoomId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const createInstantMeeting = async () => {
-    setIsCreating(true)
-    const roomId = uuidv4()
-    const creatorId = `creator-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    
+    setIsCreating(true);
+    const roomId = uuidv4();
+    const creatorId = `creator-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+
     try {
       // Store meeting creation info in Supabase
-      const supabase = createSupabaseClient()
+      const supabase = createSupabaseClient();
       if (supabase) {
-        const { error } = await supabase
-          .from('meetings')
-          .insert({
-            room_id: roomId,
-            title: meetingTitle || 'Instant Meeting',
-            created_by: creatorId,
-            created_at: new Date().toISOString(),
-            is_active: true
-          })
+        const { error } = await supabase.from("meetings").insert({
+          room_id: roomId,
+          title: meetingTitle || "Instant Meeting",
+          created_by: creatorId,
+          created_at: new Date().toISOString(),
+          is_active: true,
+        });
 
         if (error) {
-          console.log('Error storing meeting info:', error.message)
+          console.log("Error storing meeting info:", error.message);
           // Continue anyway - meeting will work without host privileges
         } else {
-          console.log('Meeting created successfully with creator:', creatorId)
+          console.log("Meeting created successfully with creator:", creatorId);
           // Store creator ID in localStorage so they can claim host status
-          localStorage.setItem(`meeting-creator-${roomId}`, creatorId)
+          localStorage.setItem(`meeting-creator-${roomId}`, creatorId);
         }
       }
 
       // Simulate meeting creation delay
       setTimeout(() => {
-        setCreatedRoomId(roomId)
-        setIsCreating(false)
-        toast.success('Meeting room created successfully!')
-      }, 1500)
-
+        setCreatedRoomId(roomId);
+        setIsCreating(false);
+        toast.success("Meeting room created successfully!");
+      }, 1500);
     } catch (error) {
-      console.error('Error creating meeting:', error)
+      console.error("Error creating meeting:", error);
       // Still create meeting even if database fails
       setTimeout(() => {
-        setCreatedRoomId(roomId)
-        setIsCreating(false)
-        toast.success('Meeting room created successfully!')
-      }, 1500)
+        setCreatedRoomId(roomId);
+        setIsCreating(false);
+        toast.success("Meeting room created successfully!");
+      }, 1500);
     }
-  }
+  };
 
   const joinMeeting = (roomId: string) => {
-    router.push(`/meeting/${roomId}`)
-  }
+    router.push(`/meeting/${roomId}`);
+  };
 
   const handleJoinMeeting = () => {
     if (joinMeetingId.trim()) {
       // Clean the meeting ID (remove any spaces, special chars)
-      const cleanId = joinMeetingId.trim().replace(/[^a-zA-Z0-9-]/g, '')
+      const cleanId = joinMeetingId.trim().replace(/[^a-zA-Z0-9-]/g, "");
       if (cleanId) {
-        joinMeeting(cleanId)
+        joinMeeting(cleanId);
       } else {
-        toast.error('Please enter a valid meeting ID')
+        toast.error("Please enter a valid meeting ID");
       }
     } else {
-      toast.error('Please enter a meeting ID')
+      toast.error("Please enter a meeting ID");
     }
-  }
+  };
 
   const copyInviteLink = (roomId: string) => {
-    const inviteLink = `${window.location.origin}/meeting/${roomId}`
-    navigator.clipboard.writeText(inviteLink)
-    setCopied(true)
-    toast.success('Invite link copied to clipboard!')
-    
-    setTimeout(() => setCopied(false), 2000)
-  }
+    const inviteLink = `${window.location.origin}/meeting/${roomId}`;
+    navigator.clipboard.writeText(inviteLink);
+    setCopied(true);
+    toast.success("Invite link copied to clipboard!");
+
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const shareInvite = (roomId: string) => {
-    const inviteLink = `${window.location.origin}/meeting/${roomId}`
-    const shareText = `Join my DarkMeet video call: ${inviteLink}`
-    
+    const inviteLink = `${window.location.origin}/meeting/${roomId}`;
+    const shareText = `Join my DarkMeet video call: ${inviteLink}`;
+
     if (navigator.share) {
       navigator.share({
-        title: 'Join my DarkMeet call',
+        title: "Join my DarkMeet call",
         text: shareText,
         url: inviteLink,
-      })
+      });
     } else {
-      copyInviteLink(roomId)
+      copyInviteLink(roomId);
     }
-  }
+  };
 
   if (createdRoomId) {
     return (
@@ -125,12 +134,18 @@ export default function NewMeetingPage() {
               <Check className="h-8 w-8 text-white" />
             </div>
 
-            <h1 className="text-2xl font-bold text-white mb-2">Meeting Ready!</h1>
-            <p className="text-gray-400 mb-6">Your meeting room has been created</p>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Meeting Ready!
+            </h1>
+            <p className="text-gray-400 mb-6">
+              Your meeting room has been created
+            </p>
 
             <div className="bg-dark-800 rounded-lg p-4 mb-6">
               <div className="text-sm text-gray-400 mb-2">Meeting ID</div>
-              <div className="text-lg font-mono text-neon-blue break-all">{createdRoomId}</div>
+              <div className="text-lg font-mono text-neon-blue break-all">
+                {createdRoomId}
+              </div>
             </div>
 
             <div className="space-y-3 mb-6">
@@ -169,14 +184,17 @@ export default function NewMeetingPage() {
             </div>
 
             <div className="text-center">
-              <Link href="/dashboard" className="text-neon-blue hover:text-neon-purple transition-colors duration-300">
+              <Link
+                href="/dashboard"
+                className="text-neon-blue hover:text-neon-purple transition-colors duration-300"
+              >
                 Back to Dashboard
               </Link>
             </div>
           </motion.div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -195,7 +213,9 @@ export default function NewMeetingPage() {
             <div className="flex items-center justify-between">
               <Link href="/" className="flex items-center space-x-2">
                 <Video className="h-8 w-8 text-neon-blue" />
-                <span className="text-2xl font-bold gradient-text">DarkMeet</span>
+                <span className="text-2xl font-bold gradient-text">
+                  DarkMeet
+                </span>
               </Link>
 
               <Link href="/dashboard" className="btn-secondary">
@@ -213,11 +233,12 @@ export default function NewMeetingPage() {
             className="text-center mb-12"
           >
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              <span className="text-white">Start Your</span>{' '}
+              <span className="text-white">Start Your</span>{" "}
               <span className="gradient-text">Meeting</span>
             </h1>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Create a new meeting room with AI-powered features and invite others to join
+              Create a new meeting room with AI-powered features and invite
+              others to join
             </p>
           </motion.div>
 
@@ -233,7 +254,9 @@ export default function NewMeetingPage() {
                 <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-purple rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Video className="h-8 w-8 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Instant Meeting</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  Instant Meeting
+                </h2>
                 <p className="text-gray-400">Start a meeting right now</p>
               </div>
 
@@ -278,7 +301,9 @@ export default function NewMeetingPage() {
                 <div className="w-16 h-16 bg-gradient-to-r from-neon-purple to-neon-pink rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Users className="h-8 w-8 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Join Meeting</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  Join Meeting
+                </h2>
                 <p className="text-gray-400">Enter meeting ID to join</p>
               </div>
 
@@ -313,9 +338,12 @@ export default function NewMeetingPage() {
               <Sparkles className="h-5 w-5 text-neon-blue" />
               <span>Quick Actions</span>
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link href="/dashboard" className="flex items-center space-x-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors duration-300 group">
+              <Link
+                href="/dashboard"
+                className="flex items-center space-x-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors duration-300 group"
+              >
                 <Settings className="h-6 w-6 text-neon-purple group-hover:scale-110 transition-transform duration-300" />
                 <div>
                   <div className="font-semibold text-white">Dashboard</div>
@@ -323,19 +351,26 @@ export default function NewMeetingPage() {
                 </div>
               </Link>
 
-              <button className="flex items-center space-x-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors duration-300 group">
+              <button className="h-full flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors duration-300 group text-left">
                 <Calendar className="h-6 w-6 text-neon-green group-hover:scale-110 transition-transform duration-300" />
-                <div>
-                  <div className="font-semibold text-white">Schedule Meeting</div>
+                <div className="leading-tight">
+                  <div className="font-semibold text-white">
+                    Schedule Meeting
+                  </div>
                   <div className="text-sm text-gray-400">Plan for later</div>
                 </div>
               </button>
 
-              <Link href="/settings" className="flex items-center space-x-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors duration-300 group">
+              <Link
+                href="/settings"
+                className="flex items-center space-x-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors duration-300 group"
+              >
                 <Settings className="h-6 w-6 text-neon-cyan group-hover:scale-110 transition-transform duration-300" />
                 <div>
                   <div className="font-semibold text-white">Settings</div>
-                  <div className="text-sm text-gray-400">Configure preferences</div>
+                  <div className="text-sm text-gray-400">
+                    Configure preferences
+                  </div>
                 </div>
               </Link>
             </div>
@@ -343,5 +378,5 @@ export default function NewMeetingPage() {
         </main>
       </div>
     </div>
-  )
-} 
+  );
+}
