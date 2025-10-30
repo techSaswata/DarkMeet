@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Video, Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
@@ -21,6 +21,16 @@ export default function AuthPage() {
   })
 
   const router = useRouter()
+  useEffect(() => {
+  async function check() {
+    const supabase = createSupabaseClient();
+    if (!supabase) return;
+    const { data } = await supabase.auth.getSession();
+    if (data.session) router.replace("/dashboard");
+  }
+  check();
+}, []);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
