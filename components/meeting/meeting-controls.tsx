@@ -14,7 +14,9 @@ import {
   Phone, 
   Settings,
   Circle,
-  StopCircle
+  StopCircle,
+  Users2,
+  Mic
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -27,6 +29,8 @@ interface MeetingControlsProps {
   isParticipantsOpen: boolean
   isAIOpen: boolean
   isWhiteboardOpen: boolean
+  isBreakoutRoomsOpen: boolean
+  isRecordingOpen: boolean
   onToggleMute: () => void
   onToggleVideo: () => void
   onToggleRecording: () => void
@@ -35,6 +39,8 @@ interface MeetingControlsProps {
   onToggleParticipants: () => void
   onToggleAI: () => void
   onToggleWhiteboard: () => void
+  onToggleBreakoutRooms: () => void
+  onToggleRecordingPanel: () => void
   roomId: string
 }
 
@@ -47,6 +53,8 @@ export function MeetingControls({
   isParticipantsOpen,
   isAIOpen,
   isWhiteboardOpen,
+  isBreakoutRoomsOpen,
+  isRecordingOpen,
   onToggleMute,
   onToggleVideo,
   onToggleRecording,
@@ -55,6 +63,8 @@ export function MeetingControls({
   onToggleParticipants,
   onToggleAI,
   onToggleWhiteboard,
+  onToggleBreakoutRooms,
+  onToggleRecordingPanel,
   roomId
 }: MeetingControlsProps) {
   const router = useRouter()
@@ -127,6 +137,15 @@ export function MeetingControls({
           <Users className="h-5 w-5" />
         </button>
 
+        {/* Breakout Rooms */}
+        <button
+          onClick={onToggleBreakoutRooms}
+          className={`toolbar-button ${isBreakoutRoomsOpen ? 'active' : ''}`}
+          title="Breakout Rooms"
+        >
+          <Users2 className="h-5 w-5" />
+        </button>
+
         {/* AI Assistant */}
         <button
           onClick={onToggleAI}
@@ -143,6 +162,15 @@ export function MeetingControls({
           title="AI Whiteboard"
         >
           <Palette className="h-5 w-5" />
+        </button>
+
+        {/* Recording Panel */}
+        <button
+          onClick={onToggleRecordingPanel}
+          className={`toolbar-button ${isRecordingOpen ? 'active' : ''}`}
+          title="Recording & Transcription"
+        >
+          <Mic className="h-5 w-5" />
         </button>
 
         {/* Settings */}
